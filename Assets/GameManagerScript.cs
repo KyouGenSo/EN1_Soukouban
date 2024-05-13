@@ -61,9 +61,14 @@ public class GameManagerScript : MonoBehaviour
             if (!success) { return false; }
         }
 
-        field[moveFrom.y, moveFrom.x].transform.position = PlayerPositionAdjust(moveTo);
+        //field[moveFrom.y, moveFrom.x].transform.position = PlayerPositionAdjust(moveTo);
+        Vector3 moveToPos = new Vector3();
+        moveToPos = PlayerPositionAdjust(moveTo);
+        field[moveFrom.y, moveFrom.x].GetComponent<Move>().MoveTo(moveToPos);
+
         field[moveTo.y, moveTo.x] = field[moveFrom.y, moveFrom.x];
         field[moveFrom.y, moveFrom.x] = null;
+
         return true;
     }
 
@@ -97,6 +102,9 @@ public class GameManagerScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+
+        Screen.SetResolution(1920, 1080, false);
+
         map = new int[,] {
            { 0, 0, 0, 0, 0, 0, 0,},
            { 0, 0, 0, 3, 0, 0, 0,},
