@@ -8,7 +8,10 @@ public class GameManagerScript : MonoBehaviour
     int[,] map;
     public GameObject playerPreFab;
     public GameObject Box;
+    public GameObject goal;
     public GameObject[,] field;
+
+    public GameObject clearText;
 
     Vector2Int GetPlayerIndex()
     {
@@ -20,6 +23,7 @@ public class GameManagerScript : MonoBehaviour
                 {
                     continue;
                 }
+
                 if (field[y, x].tag == "Player")
                 {
                     return new Vector2Int(x, y);
@@ -27,6 +31,21 @@ public class GameManagerScript : MonoBehaviour
             }
         }
         return new Vector2Int(-1, -1);
+    }
+
+    Vector3 PlayerPositionAdjust(int x, int y)
+    {
+        return new Vector3(x - map.GetLength(1) / 2 + 0.5f, -y + map.GetLength(0) / 2 - 1, 0);
+    }
+
+    Vector3 PlayerPositionAdjust(Vector2Int index)
+    {
+        return new Vector3(index.x - map.GetLength(1) / 2 + 0.5f, -index.y + map.GetLength(0) / 2 - 1, 0);
+    }
+
+    Vector3 GoalPositionAdjust(int x, int y)
+    {
+        return new Vector3(x - map.GetLength(1) / 2 + 0.5f, -y + map.GetLength(0) / 2 - 1, 0.001f);
     }
 
     bool MoveNumber(string tag, Vector2Int moveFrom, Vector2Int moveTo)
@@ -42,9 +61,36 @@ public class GameManagerScript : MonoBehaviour
             if (!success) { return false; }
         }
 
-        field[moveFrom.y, moveFrom.x].transform.position = new Vector3(moveTo.x - map.GetLength(1) / 2 + 0.5f, -moveTo.y + map.GetLength(0) / 2 - 1, 0);
+        field[moveFrom.y, moveFrom.x].transform.position = PlayerPositionAdjust(moveTo);
         field[moveTo.y, moveTo.x] = field[moveFrom.y, moveFrom.x];
         field[moveFrom.y, moveFrom.x] = null;
+        return true;
+    }
+
+    bool isCleared()
+    {
+        List<Vector2Int> goal = new List<Vector2Int>();
+
+        for (int y = 0; y < map.GetLength(0); y++)
+        {
+            for (int x = 0; x < map.GetLength(1); x++)
+            {
+                if (map[y, x] == 3)
+                {
+                    goal.Add(new Vector2Int(x, y));
+                }
+            }
+        }
+
+        for (int i = 0; i < goal.Count; i++)
+        {
+            GameObject f = field[goal[i].y, goal[i].x];
+            if (f == null || f.tag != "Box")
+            {
+                return false;
+            }
+        }
+
         return true;
     }
 
@@ -52,18 +98,16 @@ public class GameManagerScript : MonoBehaviour
     void Start()
     {
         map = new int[,] {
-           { 0, 0, 0, 0, 0 },
-           { 0, 0, 0, 0, 0 },
-           { 0, 0, 1, 2, 0 },
-           { 0, 0, 0, 0, 0 },
-           { 0, 0, 0, 0, 0 },
+           { 0, 0, 0, 0, 0, 0, 0,},
+           { 0, 0, 0, 3, 0, 0, 0,},
+           { 0, 0, 0, 2, 0, 0, 0,},
+           { 0, 3, 2, 1, 2, 3, 0,},
+           { 0, 0, 0, 2, 0, 0, 0,},
+           { 0, 0, 0, 3, 0, 0, 0,},
+           { 0, 0, 0, 0, 0, 0, 0,},
         };
 
-        field = new GameObject
-            [
-            map.GetLength(0),
-            map.GetLength(1)
-            ];
+        field = new GameObject[map.GetLength(0), map.GetLength(1)];
 
         for (int y = 0; y < map.GetLength(0); y++)
         {
@@ -71,11 +115,24 @@ public class GameManagerScript : MonoBehaviour
             {
                 if (map[y, x] == 1)
                 {
-                    field[y, x] = Instantiate(playerPreFab, new Vector3(x - map.GetLength(1) / 2 + 0.5f, -y + map.GetLength(0) / 2 - 1, 0), Quaternion.identity);
+                    field[y, x] = Instantiate
+                        (playerPreFab,
+                        PlayerPositionAdjust(x, y),
+                        Quaternion.identity);
                 }
                 else if (map[y, x] == 2)
                 {
-                    field[y, x] = Instantiate(Box, new Vector3(x - map.GetLength(1) / 2 + 0.5f, -y + map.GetLength(0) / 2 - 1, 0), Quaternion.identity);
+                    field[y, x] = Instantiate
+                        (Box,
+                        PlayerPositionAdjust(x, y),
+                        Quaternion.identity);
+                }
+                else if (map[y, x] == 3)
+                {
+                    Instantiate
+                        (goal,
+                         GoalPositionAdjust(x, y),
+                         Quaternion.identity);
                 }
             }
         }
@@ -119,6 +176,15 @@ public class GameManagerScript : MonoBehaviour
 
             MoveNumber(field[playerIndex.y, playerIndex.x].tag, playerIndex, playerIndex + moveDown);
 
+        }
+
+        if (isCleared())
+        {
+            clearText.SetActive(true);
+        }
+        else
+        {
+            clearText.SetActive(false);
         }
     }
 
